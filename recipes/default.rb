@@ -19,33 +19,6 @@
 include_recipe "apt"
 include_recipe "java"
 
-package "unzip" do
-  action :install
-end
-
-
-if node['zookeeper']['environment']['name'].nil? || node['zookeeper']['environment']['name'].empty? then
-   log "Environment variable NOT SET, defaulting to current node environment" 
-   zookeeper_chef_environment = node.chef_environment
-else
-   zookeeper_chef_environment = node['zookeeper']['environment']['name']
-end
-
-puts "Environment: #{zookeeper_chef_environment}"
-
-if zookeeper_chef_environment == "_default" then
-   raise "Can't run on default environment"
-end
-
-if Chef::Config.solo then
-   node_list = [node]
-else
-   node_list = search(:node, "chef_environment:#{zookeeper_chef_environment}")
-end
-
-if node_list.empty? then
-   raise "No nodes matching the search pattern!"
-end
 
 app_root_dir = node['zookeeper']['root_dir']
 data_dir = node['zookeeper']['data_dir']
@@ -54,44 +27,66 @@ client_port = node['zookeeper']['client_port']
 myid = node['zookeeper']['myid']
 servers = node['zookeeper']['server_list']
 
-directory app_root_dir do
-   owner "zookeeper"
-   group "zookeeper"
-   mode "0755"
-   action :create
-end
+if node['zookeeper']['url'].nil?
+  
+  if node['zookeeper']['version']
+    package "zookeeperd", node['zookeeper']['version']
+  else
+    package "zookeeperd"
+  end
+    
+else
+  
+  directory app_root_dir do
+     owner "zookeeper"
+     group "zookeeper"
+     mode "0755"
+     action :create
+  end
 
-directory config_dir do
-   owner "zookeeper"
-   group "zookeeper"
-   mode "0755"
-   action :create
-end
+  directory config_dir do
+     owner "zookeeper"
+     group "zookeeper"
+     mode "0755"
+     action :create
+  end
 
-directory data_dir do
-   owner "zookeeper"
-   group "zookeeper"
-   mode "0755"
-   action :create
-end
+  directory data_dir do
+     owner "zookeeper"
+     group "zookeeper"
+     mode "0755"
+     action :create
+  end
 
-bash "retrieve current zookeeper tarball" do
-  user "root"
-  cwd "/tmp"
-  code %(s3cmd get --force s3://#{node.deploybucket}/deployment/zookeeper/zookeeper-#{node.zookeeper.version}.tgz)
-end
+  src_filepath  = "#{Chef::Config['file_cache_path'] || '/tmp'}/zookeeper-#{node['zookeeper']['version']}.tar.gz"
+  remote_file src_filepath do 
+    path node['zookeeper']['url']
+    checksum node['zookeeper']['checksum']
+    backup false
+  end
 
-bash "untar zookeeper" do
-  user "root"
-  cwd "/tmp"
-  code %(tar -zxf /tmp/zookeeper-#{node.zookeeper.version}.tgz)
-  not_if { File.exists? "/tmp/zookeeper-#{node.zookeeper.version}" }
-end
+  bash "untar zookeeper" do
+    user "root"
+    cwd "/tmp"
+    code %(tar zxf #{::File.basename(src_filepath)} -C #{::File.dirname(src_filepath)})
+    not_if { File.exists? ::File.dirname(src_filepath) }
+  end
 
-bash "copy zookeeper root" do
-  user "root"
-  cwd "/tmp"
-  code %(cp -r /tmp/zookeeper-#{node.zookeeper.version}/* /mnt/local/zookeeper)
+  bash "copy zookeeper root" do
+    user "root"
+    cwd "/tmp"
+    code %(cp -r #{::File.dirname(src_filepath)}/* #{node['zookeeper']['jar_path']})
+  end
+  
+  if node['platform'] == "ubuntu"
+    template "/etc/init/zookeeper.conf" do
+      source "zookeeper_upstart.erb"
+      mode "0644"
+      owner "root"
+      group "root"
+    end
+  end
+  
 end
 
 template_variables = {
@@ -100,7 +95,7 @@ template_variables = {
    :zookeeper_client_port       => client_port
 }
 
-%w{ configuration.xsl log4j.properties zoo.cfg }.each do |templ|
+%w{ configuration.xsl log4j.properties zoo.cfg environment }.each do |templ|
    template "#{config_dir}/#{templ}" do
       source "#{templ}.erb"
       mode "0644"
@@ -118,8 +113,17 @@ template "#{config_dir}/myid" do
    variables({:myid => myid})
 end
 
-bash "restart zookeeper" do
-  user "root"
-  cwd "#{app_root_dir}"
-  code %(bin/zkServer.sh restart)
-end 
+if node['platform'] == "ubuntu"
+  service "zookeeper" do
+     provider Chef::Provider::Service::Upstart
+     action :restart
+     running true
+     supports :status => true, :restart => true
+  end
+else
+  bash "restart zookeeper" do
+    user "root"
+    cwd "#{app_root_dir}"
+    code %(bin/zkServer.sh restart)
+  end 
+end

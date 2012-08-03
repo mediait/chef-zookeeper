@@ -25,7 +25,7 @@ clientPort=<%= @zookeeper_client_port %>
 
 <% if @zookeeper_servers  %>
 <% @zookeeper_servers.each do |host| %>
-server.<%= host['myid'] %>=<%= host['ip'] %>:2888:3888
+server.<%= @zookeeper_servers.index(host) + 1 %>=<%= host %>:2888:3888
 <% end %>
 <% end %>
 
