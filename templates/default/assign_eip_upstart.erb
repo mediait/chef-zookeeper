@@ -1,0 +1,8 @@
+description "zookeeper centralized coordination service"
+
+start on starting zookeeper
+stop on runlevel [!2345]
+
+script
+    /opt/bin/assign_eip
+end script
