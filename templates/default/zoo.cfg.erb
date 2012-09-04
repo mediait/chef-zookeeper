@@ -56,3 +56,6 @@ server.<%= @zookeeper_servers.index(host) + 1 %>=<%= host %>:2888:3888
 # on coordination.
 #leaderServes=yes
 
+# Election implementation to use. A value of "0" corresponds to the original 
+# UDP-based version and "3" corresponds to TCP-based version of fast leader election. 
+electionAlg=<%= @zookeeper_election_alg %>

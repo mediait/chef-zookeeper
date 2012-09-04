@@ -26,6 +26,7 @@ config_dir = node['zookeeper']['config_dir']
 client_port = node['zookeeper']['client_port']
 myid = node['zookeeper']['myid']
 servers = node['zookeeper']['server_list']
+election_alg = node['zookeeper']['electionAlg']
 
 if node['zookeeper']['url'].nil?
   
@@ -92,7 +93,8 @@ end
 template_variables = {
    :zookeeper_servers           => servers,
    :zookeeper_data_dir          => data_dir,
-   :zookeeper_client_port       => client_port
+   :zookeeper_client_port       => client_port,
+   :zookeeper_election_alg      => election_alg
 }
 
 %w{ configuration.xsl log4j.properties zoo.cfg environment }.each do |templ|
