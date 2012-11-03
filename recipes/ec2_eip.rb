@@ -1,6 +1,11 @@
 
 include_recipe "zookeeper"
 
+case node['platform']
+when "debian","ubuntu"
+  package "libxml2-dev"
+  package "libxslt-dev"
+end
 gem_package "aws-sdk"
 
 directory "/opt/bin" do
