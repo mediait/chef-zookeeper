@@ -6,3 +6,4 @@ long_description IO.read(File.join(File.dirname(__FILE__), 'README.rdoc'))
 version          "0.2.0"
 
 depends "apt"
+depends "java"
