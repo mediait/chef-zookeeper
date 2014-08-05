@@ -59,9 +59,9 @@ else
      action :create
   end
 
-  src_filepath  = "#{Chef::Config['file_cache_path'] || '/tmp'}/zookeeper-#{node['zookeeper']['version']}.tar.gz"
+  src_filepath  = "#{Chef::Config['file_cache_path']}/zookeeper-#{node['zookeeper']['version']}.tar.gz"
   remote_file src_filepath do 
-    path node['zookeeper']['url']
+    source node['zookeeper']['url']
     checksum node['zookeeper']['checksum']
     backup false
   end
@@ -69,14 +69,14 @@ else
   bash "untar zookeeper" do
     user "root"
     cwd "/tmp"
-    code %(tar zxf #{::File.basename(src_filepath)} -C #{::File.dirname(src_filepath)})
-    not_if { File.exists? ::File.dirname(src_filepath) }
+    code %(tar zxf #{src_filepath} -C #{::File.dirname(src_filepath)})
+    # not_if { File.exists? ::File.dirname(src_filepath) }
   end
 
   bash "copy zookeeper root" do
     user "root"
     cwd "/tmp"
-    code %(cp -r #{::File.dirname(src_filepath)}/* #{node['zookeeper']['jar_path']})
+    code %(cp -r #{::File.dirname(src_filepath)}/#{::File.basename(src_filepath, '.tar.gz')}/* /usr/share/java/)
   end
   
   if node['platform'] == "ubuntu"

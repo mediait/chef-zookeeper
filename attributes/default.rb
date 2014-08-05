@@ -9,6 +9,6 @@ default['zookeeper']['electionAlg'] = 3
 default['zookeeper']['server_list'] = []
 default['zookeeper']['eip_list'] = []    # for the ec2_eip recipe - The indexes correlate to server_list
 
-default['zookeeper']['version'] = nil
-default['zookeeper']['url'] = nil
-default['zookeeper']['checksum'] = nil
+default['zookeeper']['version'] = "3.4.6"
+default['zookeeper']['url'] = "http://apache-mirror.rbc.ru/pub/apache/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz"
+default['zookeeper']['checksum'] = "971c379ba65714fd25dc5fe8f14e9ad1"
