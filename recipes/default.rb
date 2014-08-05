@@ -115,17 +115,17 @@ template "#{config_dir}/myid" do
    variables({:myid => myid})
 end
 
-if node['platform'] == "ubuntu"
-  service "zookeeper" do
-     provider Chef::Provider::Service::Upstart
-     action :restart
-     running true
-     supports :status => true, :restart => true
-  end
-else
+# if node['platform'] == "ubuntu"
+#   service "zookeeper" do
+#      provider Chef::Provider::Service::Upstart
+#      action :restart
+#      running true
+#      supports :status => true, :restart => true
+#   end
+# else
   bash "restart zookeeper" do
     user "root"
     cwd "#{app_root_dir}"
-    code %(bin/zkServer.sh restart)
+    code %(zookeeper-server restart)
   end 
-end
+# end
